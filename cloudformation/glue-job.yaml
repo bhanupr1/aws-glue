@@ -1,11 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Simple AWS Glue Job Deployment
-
-Parameters:
-  SourceS3:
-    Type: String
-  TargetS3:
-    Type: String
+Description: Simple AWS Glue Job Deployment (No Parameters)
 
 Resources:
   SimpleGlueJob:
@@ -20,8 +14,8 @@ Resources:
       DefaultArguments:
         "--TempDir": s3://aira1725/temp/
         "--job-language": python
-        "--SOURCE_S3": !Ref SourceS3
-        "--TARGET_S3": !Ref TargetS3
+        "--SOURCE_S3": s3://aira1725/source/
+        "--TARGET_S3": s3://aira1725/target/
       GlueVersion: "4.0"
       WorkerType: G.1X
       NumberOfWorkers: 2

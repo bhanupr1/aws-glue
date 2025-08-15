@@ -17,8 +17,6 @@ jobs:
       AWS_REGION: us-east-1
       S3_BUCKET_NAME: aira1725
       GLUE_ROLE_NAME: GlueJobRole1725
-      SOURCE_S3: s3://aira1725/source/
-      TARGET_S3: s3://aira1725/target/
 
     steps:
     - name: Checkout code
@@ -79,7 +77,4 @@ jobs:
         aws cloudformation deploy \
           --template-file cloudformation/glue-job.yaml \
           --stack-name simple-glue-job-stack \
-          --capabilities CAPABILITY_NAMED_IAM \
-          --parameter-overrides \
-            SourceS3=$SOURCE_S3 \
-            TargetS3=$TARGET_S3
+          --capabilities CAPABILITY_NAMED_IAM
