@@ -1,24 +1,27 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Deploy AWS Glue Job
+Description: Simple AWS Glue Job Deployment
 
 Parameters:
-  ScriptBucket:
+  SourceS3:
     Type: String
-  GlueRoleArn:
+  TargetS3:
     Type: String
 
 Resources:
-  MyGlueJob:
+  SimpleGlueJob:
     Type: AWS::Glue::Job
     Properties:
-      Name: my-glue-job
-      Role: !Ref GlueRoleArn
+      Name: simple-glue-job
+      Role: arn:aws:iam::330084888881:role/GlueJobRole1725
       Command:
         Name: glueetl
-        ScriptLocation: !Sub s3://${ScriptBucket}/jobs/my_glue_script.py
+        ScriptLocation: s3://aira1725/jobs/my_glue_script.py
         PythonVersion: 3
       DefaultArguments:
-        "--TempDir": !Sub s3://${ScriptBucket}/temp/
+        "--TempDir": s3://aira1725/temp/
         "--job-language": python
+        "--SOURCE_S3": !Ref SourceS3
+        "--TARGET_S3": !Ref TargetS3
       GlueVersion: "4.0"
-      MaxCapacity: 2
+      WorkerType: G.1X
+      NumberOfWorkers: 2

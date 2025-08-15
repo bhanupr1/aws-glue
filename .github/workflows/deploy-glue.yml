@@ -13,8 +13,9 @@ jobs:
       contents: read
 
     env:
-      S3_BUCKET_NAME: my-glue-scripts-bucket
-      GLUE_ROLE_ARN: arn:aws:iam::<AWS_ACCOUNT_ID>:role/GlueJobRole
+      S3_BUCKET_NAME: aira1725
+      SOURCE_S3: s3://aira1725/source/
+      TARGET_S3: s3://aira1725/target/
 
     steps:
     - name: Checkout code
@@ -23,7 +24,7 @@ jobs:
     - name: Configure AWS credentials (OIDC)
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: arn:aws:iam::<AWS_ACCOUNT_ID>:role/GitHubActionsGlueDeployRole
+        role-to-assume: arn:aws:iam::330084888881:role/GitHubActionsGlueDeployRole
         aws-region: us-east-1
 
     - name: Upload Glue script to S3
@@ -34,8 +35,8 @@ jobs:
       run: |
         aws cloudformation deploy \
           --template-file cloudformation/glue-job.yaml \
-          --stack-name my-glue-job-stack \
+          --stack-name simple-glue-job-stack \
           --capabilities CAPABILITY_NAMED_IAM \
           --parameter-overrides \
-            ScriptBucket=$S3_BUCKET_NAME \
-            GlueRoleArn=$GLUE_ROLE_ARN
+            SourceS3=$SOURCE_S3 \
+            TargetS3=$TARGET_S3
