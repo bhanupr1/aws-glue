@@ -1,1 +1,41 @@
-###
+name: Deploy AWS Glue Job
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      S3_BUCKET_NAME: my-glue-scripts-bucket
+      GLUE_ROLE_ARN: arn:aws:iam::<AWS_ACCOUNT_ID>:role/GlueJobRole
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials (OIDC)
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::<AWS_ACCOUNT_ID>:role/GitHubActionsGlueDeployRole
+        aws-region: us-east-1
+
+    - name: Upload Glue script to S3
+      run: |
+        aws s3 cp scripts/my_glue_script.py s3://$S3_BUCKET_NAME/jobs/
+
+    - name: Deploy CloudFormation Stack
+      run: |
+        aws cloudformation deploy \
+          --template-file cloudformation/glue-job.yaml \
+          --stack-name my-glue-job-stack \
+          --capabilities CAPABILITY_NAMED_IAM \
+          --parameter-overrides \
+            ScriptBucket=$S3_BUCKET_NAME \
+            GlueRoleArn=$GLUE_ROLE_ARN

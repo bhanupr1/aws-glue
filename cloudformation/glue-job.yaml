@@ -1,1 +1,24 @@
-##
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploy AWS Glue Job
+
+Parameters:
+  ScriptBucket:
+    Type: String
+  GlueRoleArn:
+    Type: String
+
+Resources:
+  MyGlueJob:
+    Type: AWS::Glue::Job
+    Properties:
+      Name: my-glue-job
+      Role: !Ref GlueRoleArn
+      Command:
+        Name: glueetl
+        ScriptLocation: !Sub s3://${ScriptBucket}/jobs/my_glue_script.py
+        PythonVersion: 3
+      DefaultArguments:
+        "--TempDir": !Sub s3://${ScriptBucket}/temp/
+        "--job-language": python
+      GlueVersion: "4.0"
+      MaxCapacity: 2
