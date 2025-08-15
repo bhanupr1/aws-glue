@@ -13,7 +13,10 @@ jobs:
       contents: read
 
     env:
+      AWS_ACCOUNT_ID: 330084888881
+      AWS_REGION: us-east-1
       S3_BUCKET_NAME: aira1725
+      GLUE_ROLE_NAME: GlueJobRole1725
       SOURCE_S3: s3://aira1725/source/
       TARGET_S3: s3://aira1725/target/
 
@@ -25,11 +28,51 @@ jobs:
       uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::330084888881:role/GitHubActionsGlueDeployRole
-        aws-region: us-east-1
+        aws-region: ${{ env.AWS_REGION }}
 
-    - name: Upload Glue script to S3
+    - name: Check & Create Glue IAM Role if missing
       run: |
+        set -e
+        if ! aws iam get-role --role-name $GLUE_ROLE_NAME >/dev/null 2>&1; then
+          echo "Creating Glue IAM role: $GLUE_ROLE_NAME"
+          aws iam create-role \
+            --role-name $GLUE_ROLE_NAME \
+            --assume-role-policy-document '{
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": { "Service": "glue.amazonaws.com" },
+                  "Action": "sts:AssumeRole"
+                }
+              ]
+            }'
+          aws iam attach-role-policy \
+            --role-name $GLUE_ROLE_NAME \
+            --policy-arn arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+          aws iam attach-role-policy \
+            --role-name $GLUE_ROLE_NAME \
+            --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
+        else
+          echo "Glue IAM role already exists."
+        fi
+
+    - name: Ensure S3 folders exist & upload Glue script
+      run: |
+        aws s3api head-bucket --bucket $S3_BUCKET_NAME || { echo "Bucket $S3_BUCKET_NAME does not exist"; exit 1; }
         aws s3 cp scripts/my_glue_script.py s3://$S3_BUCKET_NAME/jobs/
+
+    - name: Delete stack if stuck in ROLLBACK_COMPLETE
+      run: |
+        STATUS=$(aws cloudformation describe-stacks \
+          --stack-name simple-glue-job-stack \
+          --query "Stacks[0].StackStatus" \
+          --output text 2>/dev/null || echo "NOT_FOUND")
+        if [ "$STATUS" = "ROLLBACK_COMPLETE" ]; then
+          echo "Deleting failed stack..."
+          aws cloudformation delete-stack --stack-name simple-glue-job-stack
+          aws cloudformation wait stack-delete-complete --stack-name simple-glue-job-stack
+        fi
 
     - name: Deploy CloudFormation Stack
       run: |
